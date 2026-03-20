@@ -12,16 +12,27 @@ Original file is located at
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+from numpy.matrixlib import test
 # ---
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import classification_report
+from sklearn.metrics import ConfusionMatrixDisplay
 
+"""---
+# 1. Carregamento do Dataset
+"""
 
 # Carregar o Dataset
 
 df = pd.read_csv('marketing.csv')
 
-# df['media_cliques'] = (df['cliques'] / df['anuncios'])
+df['media_cliques'] = (df['cliques'] / df['anuncios'])
+df['foram_relevantes'] = (df['media_cliques'] > 3)
 
-df.sort_values(["cliques", "anuncios"], ascending=False)
+df.sort_values(["media_cliques"], ascending=False)
 
 print(f"Shape: {df.shape}\n\nColumns: {df.columns}\n\nInfo: \n{df.info}\n\nDescribe:{df.describe()}")
 
@@ -30,21 +41,26 @@ df.value_counts()
 
 # Mean, Min, Max, Std, Median
 
-print(f"Média: {df["cliques"].mean()}")
-print(f"Minimo: {df["cliques"].min()}")
-print(f"Maximo: {df['cliques'].max()}")
-print(f"Desvio Padrão: {df['cliques'].std()}")
-print(f"Mediana: {df['cliques'].median()}\n\n")
+print("Analise de Média de Cliques:\n")
+print(f"Média: {df["media_cliques"].mean()}")
+print(f"Minimo: {df["media_cliques"].min()}")
+print(f"Maximo: {df['media_cliques'].max()}")
+print(f"Desvio Padrão: {df['media_cliques'].std()}")
+print(f"Mediana: {df['media_cliques'].median()}\n\n")
 
 # ----------------------------------------------------------
 
+print("Analise de anuncios:\n")
 print(f"Média: {df["anuncios"].mean()}")
 print(f"Minimo: {df["anuncios"].min()}")
 print(f"Maximo: {df['anuncios'].max()}")
 print(f"Desvio Padrão: {df['anuncios'].std()}")
 print(f"Mediana: {df['anuncios'].median()}")
 
-"""# Gerando gráfico"""
+"""---
+
+# 2. Análise Exploratória
+"""
 
 # Gerando gráfico
 
@@ -57,10 +73,77 @@ plt.show()
 
 df.corr()
 
-# Histograma
+"""---
 
-df["cliques"].hist(bins=5)
+# 3.Preparação dos Dados:
+"""
 
-# Boxplot
+# Separar as variáveis independentes(X) da variavel alvo(Y)
 
-df.boxplot(column=["anuncios","cliques"])
+x = df[['anuncios']]
+y = df[['foram_relevantes']]
+
+
+# Dividir o dataset em treino e teste
+
+x_train, x_test, y_train, y_test = train_test_split(
+    x,y,
+    test_size=0.3,
+    random_state=45
+)
+
+"""---
+
+# 4.Treinamento do Modelo
+"""
+
+modelo = LogisticRegression()
+modelo.fit(x_train, y_train)
+
+y_pred = modelo.predict(x_test)
+
+print(f"Previsões")
+print(f"{y_pred}")
+print(f"{y_test}")
+
+"""---
+
+# 5. Visualização do Modelo
+"""
+
+# Acurácia
+
+acc = accuracy_score(y_test, y_pred)
+print(f"Acurácia: {acc}")
+
+# Relatório de classificação
+print(f"Relatório de Classificação:")
+print(classification_report(y_test, y_pred))
+
+# Matriz de confusão
+
+cm = confusion_matrix(y_test, y_pred)
+
+ConfusionMatrixDisplay.from_predictions(
+    y_test,
+    y_pred,
+    display_labels=["Irrelevantes", "Relevantes"],
+    cmap="Blues"
+)
+
+plt.title("Matriz de confusão")
+plt.show()
+
+"""---
+
+# Interpretação:
+
+## Dataset:
+O dataset não traz informações suficientes pra poder prever se os anuncios serão relevantes ou não. Saber a quantidade de cliques por anuncio é muito pouco, já que sem duvida alguma existem diversos outros fatores que influenciam na quantidade de cliques dos anuncios; fatores esses que não temos acesso.
+
+---
+
+## Regressão Logística:
+
+O modelo simplesmente prevê que está tudo "certo"; que todos anuncios são relevantes. Portanto, os resultados desse modelo são totalmente ineficientes.
+"""
